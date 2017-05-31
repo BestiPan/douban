@@ -7,19 +7,18 @@ import random
 import pymysql
 import urllib2
 import numpy as np
+from bs4 import BeautifulSoup
 
-#从文件中获取链接
 def get_url():
     fp = open("movie_set.txt")
     urls = []
     for line in fp:
-        for start in range(0,181,20): #每个电影爬取10页评论
+        for start in range(0,181,20):
             url = line.strip().split(" ")[0]
             url = url + "comments?start=" + str(start) + "&limit=20&sort=new_score&status=P"
             urls.append(url)
     return urls
 
-#获取每个链接的评论和评分并存入数据库
 def get_element(url,db):
     cur = db.cursor()
     user_flag = re.compile(r'a title="(.+?)"')
@@ -43,8 +42,8 @@ def get_element(url,db):
     module = module[:-1]
     for ele in module:
         ele = " ".join(ele.split("\n"))
-
         username = user_flag.findall(ele)
+
         if len(username) != 0:
             username = username[0].strip()
         else:
@@ -64,7 +63,7 @@ def get_element(url,db):
             comment = comment[0].strip()
         else:
             continue
-        print username + "\t" + title + "\t" + dates + "\t" + str(score) + "\t" + comment
+#        print username + "\t" + title + "\t" + dates + "\t" + str(score) + "\t" + comment
         
         sql = "INSERT INTO comments_new \
                 (username,title,date,score,comment) \
@@ -77,12 +76,45 @@ def get_element(url,db):
             print "出错"
             db.rollback()
     cur.close()
-    print ""
+#    print ""
+
+#去除重复影评
+def get_newdb(db):
+    cur_r = db.cursor()
+    cur_w = db.cursor()
+    sql = "SELECT distinct * FROM comments_new order by title;"
+    cur_r.execute(sql)
+    x = 0
+    for ele in cur_r:
+        x += 1
+        print x
+        line = list(ele)
+        username = line[0]
+        title = line[1]
+        dates = line[2]
+        score = int(line[3])
+        comment = line[4]
+        sql = "INSERT INTO movies_new \
+                (username,title,date,score,comment) \
+                VALUES ('%s','%s','%s','%d','%s');" % \
+                (username,title,dates,score,comment)
+        try:
+            cur_w.execute(sql)
+            db.commit()
+        except:
+            print "出错"
+            db.rollback()
+    cur_r.close()
+    cur_w.close()
 
 if __name__ == "__main__":
-    db = pymysql.connect("localhost","root","123456","douban",charset='utf8')
+    db = pymysql.connect("222.28.136.74","root","litangxi101","douban",charset='utf8')
+    
+    #爬取影评和评分
     urls = get_url()
-    urls = urls[:40000] #截取一部分链接
+    print len(urls)
+    exit()
+    urls = urls[40000:80000]
     x = 0
     for url in urls:
         x += 1
@@ -92,6 +124,8 @@ if __name__ == "__main__":
             time.sleep(2)
         except:
             print "ERROR"
-            time.sleep(2)
             continue
+    
+#    get_newdb(db)
+
     db.close()
