@@ -121,7 +121,6 @@ if __name__ == "__main__":
         print url + " " + str(x) + "/" + str(len(urls))
         try:
             get_element(url,db)
-            time.sleep(2)
         except:
             print "ERROR"
             continue
