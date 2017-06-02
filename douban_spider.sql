@@ -26,7 +26,7 @@ CREATE TABLE `comments_new` (
   `username` varchar(100) CHARACTER SET utf8mb4 DEFAULT NULL,
   `title` varchar(100) CHARACTER SET utf8mb4 DEFAULT NULL,
   `date` varchar(20) DEFAULT NULL,
-  `score` int(10) DEFAULT NULL,
+  `score` varchar(20) DEFAULT NULL,
   `comment` varchar(512) CHARACTER SET utf8mb4 DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;

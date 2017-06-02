@@ -7,7 +7,15 @@ import random
 import pymysql
 import urllib2
 import numpy as np
-from bs4 import BeautifulSoup
+
+send_headers = {
+#        "Host": "movie.douban.com",
+        "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36",
+#        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+#        "Accept-Encoding": "gzip, deflate, sdch, br",
+#        "Accept-Language": "zh-CN,zh;q=0.8",
+#        "Connection": "keep-alive"
+        }
 
 def get_url():
     fp = open("movie_set.txt")
@@ -25,8 +33,9 @@ def get_element(url,db):
     date_flag = re.compile(r'\d{4}-\d+-\d+')
     score_flag = re.compile(r'allstar(.+?) ')
     comment_flag = re.compile('<p class="">(.+?)<')
-
-    htmls = urllib2.urlopen(url,timeout=30).read()
+    
+    req = urllib2.Request(url,headers=send_headers)
+    htmls = urllib2.urlopen(req,timeout=30).read()
     
     title_flag = re.compile(r'<title>(.+?)</title>')
     title = title_flag.findall(htmls)[0].split(" ")[0]
@@ -55,7 +64,7 @@ def get_element(url,db):
             continue
         score = score_flag.findall(ele)
         if len(score) != 0:
-            score = int(score[0].strip())/10
+            score = str(int(score[0].strip())/10)
         else:
             continue
         comment = comment_flag.findall(ele)
@@ -67,13 +76,13 @@ def get_element(url,db):
         
         sql = "INSERT INTO comments_new \
                 (username,title,date,score,comment) \
-                VALUES ('%s','%s','%s','%d','%s');" % \
+                VALUES ('%s','%s','%s','%s','%s');" % \
                 (username,title,dates,score,comment)
         try:
             cur.execute(sql)
             db.commit()
         except:
-            print "出错"
+            print "数据库写入出错"
             db.rollback()
     cur.close()
 #    print ""
@@ -96,13 +105,13 @@ def get_newdb(db):
         comment = line[4]
         sql = "INSERT INTO movies_new \
                 (username,title,date,score,comment) \
-                VALUES ('%s','%s','%s','%d','%s');" % \
+                VALUES ('%s','%s','%s','%s','%s');" % \
                 (username,title,dates,score,comment)
         try:
             cur_w.execute(sql)
             db.commit()
         except:
-            print "出错"
+            print "数据库写入出错"
             db.rollback()
     cur_r.close()
     cur_w.close()
@@ -112,8 +121,6 @@ if __name__ == "__main__":
     
     #爬取影评和评分
     urls = get_url()
-    print len(urls)
-    exit()
     urls = urls[40000:80000]
     x = 0
     for url in urls:
@@ -121,8 +128,10 @@ if __name__ == "__main__":
         print url + " " + str(x) + "/" + str(len(urls))
         try:
             get_element(url,db)
-        except:
-            print "ERROR"
+            time.sleep(1)
+        except Exception,e:
+            print e
+            time.sleep(1)
             continue
     
 #    get_newdb(db)
